@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Artist Dashboard — BeatChain</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg: #080a0f;
+    --surface: #0f1218;
+    --surface-2: #161b24;
+    --border: #1e2535;
+    --border-strong: #2a3347;
+    --text: #cdd6f4;
+    --text-2: #7c8aa8;
+    --text-3: #3d4a62;
+    --green: #00e5b0;
+    --green-bg: rgba(0,229,176,0.08);
+    --green-mid: #00b890;
+    --red: #ff5c7a;
+    --red-bg: rgba(255,92,122,0.08);
+    --amber: #ffb84d;
+    --amber-bg: rgba(255,184,77,0.08);
+    --blue: #5b9cf6;
+    --blue-bg: rgba(91,156,246,0.08);
+    --mono: 'DM Mono', monospace;
+    --serif: 'Instrument Serif', serif;
+    --sans: 'DM Sans', sans-serif;
+  }
+  body { font-family: var(--sans); background: var(--surface-2); color: var(--text); min-height: 100vh; background-image: linear-gradient(rgba(30,37,53,0.4) 1px, transparent 1px), linear-gradient(90deg, rgba(30,37,53,0.4) 1px, transparent 1px); background-size: 40px 40px; background-attachment: fixed; }
+  nav { background: rgba(8,10,15,0.85); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 56px; position: sticky; top: 0; z-index: 100; }
+  .nav-logo { font-family: var(--serif); font-size: 20px; color: var(--text); text-decoration: none; }
+  .nav-logo span { font-family: var(--mono); font-size: 11px; color: var(--text-2); background: var(--surface-2); padding: 2px 6px; border-radius: 3px; margin-left: 8px; vertical-align: middle; }
+  .nav-links a { font-size: 13px; color: var(--text-2); text-decoration: none; padding: 0 14px; height: 56px; display: inline-flex; align-items: center; border-bottom: 2px solid transparent; transition: color 0.15s; }
+  .nav-links a.active { color: var(--green); border-bottom-color: var(--green); }
+  .btn-connect { font-family: var(--mono); font-size: 11px; padding: 6px 14px; background: var(--text); color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+
+  .page { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+
+  /* ARTIST HEADER */
+  .artist-header { display: flex; align-items: center; gap: 16px; margin-bottom: 2rem; }
+  .artist-avatar { width: 56px; height: 56px; border-radius: 50%; background: #0f1218; display: flex; align-items: center; justify-content: center; font-family: var(--serif); font-size: 22px; color: #f7f6f3; flex-shrink: 0; }
+  .artist-name { font-family: var(--serif); font-size: 26px; margin-bottom: 2px; }
+  .artist-meta { font-family: var(--mono); font-size: 11px; color: var(--text-3); }
+  .verified-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(0,229,176,0.1); color: #00e5b0; border: 1px solid rgba(0,229,176,0.25); font-family: var(--mono); font-size: 10px; padding: 2px 8px; border-radius: 3px; margin-left: 10px; }
+  .btn-new-listing { margin-left: auto; font-family: var(--mono); font-size: 12px; padding: 8px 20px; background: var(--green); color: #050a08; border: none; border-radius: 4px; cursor: pointer; font-weight: 500; }
+
+  /* SUMMARY */
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 2rem; }
+  .summary-card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem 1.25rem; transition: border-color 0.2s; } .summary-card:hover { border-color: rgba(0,229,176,0.3); }
+  .summary-label { font-family: var(--mono); font-size: 10px; color: var(--text-3); letter-spacing: 0.6px; text-transform: uppercase; margin-bottom: 6px; }
+  .summary-val { font-family: var(--mono); font-size: 22px; font-weight: 500; }
+  .summary-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1.25rem; transition: border-color 0.2s; } .card:hover { border-color: var(--border-strong); }
+  .card-title { font-family: var(--mono); font-size: 11px; color: var(--text-3); letter-spacing: 0.8px; text-transform: uppercase; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center; }
+
+  /* SONGS TABLE */
+  .songs-section { margin-bottom: 1.5rem; }
+  .song-row { border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; overflow: hidden; }
+  .song-row-header { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr 1fr; align-items: center; padding: 1rem; gap: 0; cursor: pointer; transition: background 0.1s; }
+  .song-row-header:hover { background: var(--surface-2); }
+  .song-row.watchlist { border-left: 3px solid #ffb84d; }
+  .song-row-expand { border-top: 1px solid var(--border); background: rgba(8,10,15,0.6); padding: 1rem; display: none; }
+  .song-row.open .song-row-expand { display: block; }
+  .cell { display: flex; flex-direction: column; align-items: flex-end; }
+  .cell-val { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .cell-label { font-size: 10px; color: var(--text-3); margin-top: 1px; }
+  .song-status { font-family: var(--mono); font-size: 10px; padding: 2px 7px; border-radius: 3px; }
+  .status-active { background:rgba(0,229,176,0.08); color: #00e5b0; }
+  .status-watchlist { background:rgba(255,184,77,0.1); color: #ffb84d; }
+  .expand-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+  .expand-item { background: var(--surface); border: 1px solid var(--border); border-radius: 5px; padding: 10px 12px; }
+  .expand-label { font-family: var(--mono); font-size: 10px; color: var(--text-3); margin-bottom: 4px; }
+  .expand-val { font-family: var(--mono); font-size: 13px; color: var(--text); }
+  .progress-bar-wrap { height: 4px; background: var(--surface-2); border-radius: 2px; margin-top: 6px; overflow: hidden; }
+  .progress-bar-fill { height: 100%; border-radius: 2px; background: #00e5b0; }
+
+  /* LISTING REVIEW */
+  .review-steps { display: flex; flex-direction: column; gap: 0; }
+  .review-step { display: flex; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .review-step:last-child { border-bottom: none; }
+  .step-icon { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-family: var(--mono); font-size: 11px; flex-shrink: 0; margin-top: 1px; }
+  .step-done { background: rgba(0,229,176,0.1); color: #00e5b0; border: 1px solid rgba(0,229,176,0.3); }
+  .step-pending { background: rgba(255,184,77,0.1); color: #ffb84d; border: 1px solid rgba(255,184,77,0.3); }
+  .step-waiting { background: var(--surface-2); color: var(--text-3); border: 1px solid var(--border); }
+  .step-name { font-size: 13px; font-weight: 500; margin-bottom: 2px; }
+  .step-sub { font-size: 12px; color: var(--text-2); }
+
+  /* ESCROW */
+  .escrow-bar { height: 8px; border-radius: 4px; background: var(--border); overflow: hidden; margin: 8px 0; }
+  .escrow-fill { height: 100%; background: var(--green); border-radius: 4px; width: 100%; }
+
+  /* ROYALTY CHART */
+  .royalty-chart { position: relative; height: 140px; }
+
+  footer { border-top: 1px solid var(--border); padding: 1.5rem 2rem; text-align: center; font-family: var(--mono); font-size: 11px; color: var(--text-3); margin-top: 2rem; }
+
+  /* web3 glow */
+  .nav-logo { text-shadow: 0 0 20px rgba(0,229,176,0.15); }
+  .song-card:hover, .card:hover { box-shadow: 0 0 0 1px rgba(0,229,176,0.12), 0 4px 24px rgba(0,0,0,0.4); }
+  .summary-card:hover { box-shadow: 0 0 0 1px rgba(0,229,176,0.2), 0 4px 20px rgba(0,0,0,0.3); }
+  .btn-invest:hover, .btn-claim:hover, .btn-new-listing:hover { box-shadow: 0 0 16px rgba(0,229,176,0.35); }
+  .btn-connect { box-shadow: 0 0 8px rgba(0,229,176,0.15); }
+  .btn-connect:hover { box-shadow: 0 0 16px rgba(0,229,176,0.4); }
+  .dot-green { background: #00e5b0; box-shadow: 0 0 6px rgba(0,229,176,0.6); }
+  .dot-amber { background: #ffb84d; box-shadow: 0 0 6px rgba(255,184,77,0.5); }
+  /* note decorations */
+  .page-note-deco { font-family: serif; color: rgba(0,229,176,0.05); position: fixed; font-size: 260px; line-height:1; pointer-events:none; user-select:none; z-index:0; }
+  .page-note-deco-2 { font-family: serif; color: rgba(0,229,176,0.03); position: fixed; font-size: 140px; line-height:1; pointer-events:none; user-select:none; z-index:0; }
+  .page { position: relative; z-index: 1; }
+  /* card title note accent */
+  .card-title::before { content: "♩ "; color: rgba(0,229,176,0.3); font-family: serif; }
+  /* scan lines */
+  body::after { content:''; position:fixed; inset:0; background: repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,229,176,0.008) 3px,rgba(0,229,176,0.008) 4px); pointer-events:none; z-index:9999; }
+  footer { position: relative; z-index:1; }
+
+
+  @keyframes pulse-glow {
+    0%, 100% { box-shadow: 0 0 4px rgba(0,229,176,0.5); }
+    50% { box-shadow: 0 0 10px rgba(0,229,176,0.9), 0 0 20px rgba(0,229,176,0.3); }
+  }
+  @keyframes float-note {
+    0%, 100% { transform: translateY(0px) rotate(-5deg); opacity: 0.05; }
+    50% { transform: translateY(-20px) rotate(5deg); opacity: 0.08; }
+  }
+  .dot-green { animation: pulse-glow 2.5s ease-in-out infinite; }
+  .page-note-deco { animation: float-note 8s ease-in-out infinite; }
+  .page-note-deco-2 { animation: float-note 11s ease-in-out infinite reverse; }
+
+  /* teal glow on oracle score */
+  .oracle-score-circle { box-shadow: 0 0 16px rgba(0,229,176,0.2); }
+
+  /* purple accent for web3 feel on claim banner and hero stats */
+  .claim-amount { text-shadow: 0 0 20px rgba(0,229,176,0.3); }
+  .hero-stat-val { text-shadow: 0 0 12px rgba(0,229,176,0.2); }
+  .summary-val { text-shadow: 0 0 10px rgba(0,229,176,0.1); }
+
+  /* glowing teal line above card title */
+  .card { border-top: 1px solid rgba(0,229,176,0.08); }
+  .card:hover { border-top-color: rgba(0,229,176,0.2); }
+
+  /* note in page title */
+  .page-title::before { content: "♫  "; color: rgba(0,229,176,0.4); font-family: serif; }
+  .artist-name::before { content: "♪  "; color: rgba(0,229,176,0.35); font-family: serif; }
+
+</style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-logo"><span style="color:#00e5b0;margin-right:6px;font-family:serif;">♪</span>BeatChain <span>POLYGON MAINNET</span></a>
+  <div class="nav-links">
+    <a href="index.html">Marketplace</a>
+    <a href="portfolio.html">Portfolio</a>
+    <a href="artist.html" class="active">Artist Dashboard</a>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="btn-connect">0x9e2c…f47a</button>
+  </div>
+</nav>
+
+<div class="page">
+<div class="page-note-deco" style="right:-40px;top:10vh;">♫</div>
+<div class="page-note-deco-2" style="left:-20px;bottom:15vh;">♪</div>
+
+
+  <div class="artist-header">
+    <div class="artist-avatar" style="font-family:var(--mono);font-size:13px;letter-spacing:-0.5px;">Axe</div>
+    <div>
+      <div class="artist-name">Xueshen Gong <span class="verified-badge">✓ Verified</span></div>
+      <div class="artist-meta">0x9e2c…f47a &nbsp;·&nbsp; DistroKid connected &nbsp;·&nbsp; Member since Jan 2024</div>
+    </div>
+    <button class="btn-new-listing">+ New listing</button>
+  </div>
+
+  <div class="summary-grid">
+    <div class="summary-card">
+      <div class="summary-label">Total raised</div>
+      <div class="summary-val">$18,400</div>
+      <div class="summary-sub">Across 2 songs</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Royalties distributed</div>
+      <div class="summary-val">$4,120</div>
+      <div class="summary-sub">To token holders, all-time</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Retained royalties</div>
+      <div class="summary-val">$18,530</div>
+      <div class="summary-sub">Your share (≥50%), all-time</div>
+    </div>
+    <div class="summary-card">
+      <div class="summary-label">Platform tier</div>
+      <div class="summary-val" style="font-size:18px;">Tier B</div>
+      <div class="summary-sub">Growth · 100% payment rate</div>
+    </div>
+  </div>
+
+  <!-- MY SONGS -->
+  <div class="songs-section">
+    <div style="font-family:var(--mono);font-size:11px;color:var(--text-3);text-transform:uppercase;letter-spacing:0.8px;margin-bottom:10px;">My listed songs</div>
+
+    <!-- Song 1: Active -->
+    <div class="song-row" id="row1">
+      <div class="song-row-header" onclick="toggleRow('row1')">
+        <div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:2px;">Midnight Signal <span class="song-status status-active">Active</span></div>
+          <div style="font-size:12px;color:var(--text-3);">Listed 14 Mar 2024 &nbsp;·&nbsp; Stable-Mature &nbsp;·&nbsp; 2,000 tokens</div>
+        </div>
+        <div class="cell"><span class="cell-val">$12,000</span><span class="cell-label">Annual royalty (R₀)</span></div>
+        <div class="cell"><span class="cell-val">$4.84</span><span class="cell-label">DCF fair value</span></div>
+        <div class="cell"><span class="cell-val">$5.21</span><span class="cell-label">Market price</span></div>
+        <div class="cell"><span class="cell-val">20%</span><span class="cell-label">Sold to investors</span></div>
+        <div class="cell"><span class="cell-val" style="color:#00e5b0;">$198</span><span class="cell-label">Mar distribution</span></div>
+      </div>
+      <div class="song-row-expand">
+        <div class="expand-grid">
+          <div class="expand-item">
+            <div class="expand-label">Escrow deposit</div>
+            <div class="expand-val">$3,600 locked</div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%;"></div></div>
+            <div style="font-size:10px;color:var(--text-3);margin-top:4px;">Full deposit held · 0 missed payments</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Income health (3-month)</div>
+            <div class="expand-val" style="color:#00e5b0;">Healthy</div>
+            <div style="font-size:11px;color:var(--text-2);margin-top:6px;">No drop >50% in trailing 3 months</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Platform concentration</div>
+            <div class="expand-val">Spotify 60%</div>
+            <div style="font-size:11px;color:#ffb84d;margin-top:6px;">Watch: single-platform risk +1.0% to rate</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Distributor</div>
+            <div class="expand-val">DistroKid</div>
+            <div style="font-size:11px;color:#00e5b0;margin-top:6px;">OAuth active · API sync OK</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Monthly listeners</div>
+            <div class="expand-val">312,000</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:6px;">Spotify for Artists · 100K–1M band</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Next Oracle update</div>
+            <div class="expand-val">1 May 2025</div>
+            <div style="font-size:11px;color:var(--text-3);margin-top:6px;">DCF recalibration + ZK proof</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Song 2: Watchlist -->
+    <div class="song-row watchlist" id="row2">
+      <div class="song-row-header" onclick="toggleRow('row2')">
+        <div>
+          <div style="font-size:14px;font-weight:500;margin-bottom:2px;">Glass Hours <span class="song-status status-watchlist">Watchlist</span></div>
+          <div style="font-size:12px;color:var(--text-3);">Listed 5 Sep 2024 &nbsp;·&nbsp; Explosive-Declining &nbsp;·&nbsp; 880 tokens</div>
+        </div>
+        <div class="cell"><span class="cell-val">$8,800</span><span class="cell-label">Annual royalty (R₀)</span></div>
+        <div class="cell"><span class="cell-val">$3.29</span><span class="cell-label">DCF fair value</span></div>
+        <div class="cell"><span class="cell-val">$2.44</span><span class="cell-label">Market price</span></div>
+        <div class="cell"><span class="cell-val">10%</span><span class="cell-label">Sold to investors</span></div>
+        <div class="cell"><span class="cell-val" style="color:#ffb84d;">$51</span><span class="cell-label">Mar distribution</span></div>
+      </div>
+      <div class="song-row-expand">
+        <div style="background:rgba(255,184,77,0.1);border:1px solid #fac775;border-radius:5px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:#ffb84d;">
+          ⚠ Income dropped >50% for 2 consecutive months. Song is on watchlist. If income continues to decline for 1 more month, delisting review may be triggered.
+        </div>
+        <div class="expand-grid">
+          <div class="expand-item">
+            <div class="expand-label">Escrow deposit</div>
+            <div class="expand-val">$2,640 locked</div>
+            <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width:100%;background:var(--amber);"></div></div>
+            <div style="font-size:10px;color:var(--text-3);margin-top:4px;">Full deposit held · 0 missed payments</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Income health (3-month)</div>
+            <div class="expand-val" style="color:#ffb84d;">Watchlist</div>
+            <div style="font-size:11px;color:var(--text-2);margin-top:6px;">Income ↓62% vs trailing average</div>
+          </div>
+          <div class="expand-item">
+            <div class="expand-label">Remediation options</div>
+            <div style="display:flex;flex-direction:column;gap:5px;margin-top:6px;">
+              <button style="font-family:var(--mono);font-size:10px;padding:4px 8px;border:1px solid var(--border);border-radius:3px;background:var(--surface);cursor:pointer;color:var(--text-2);">Increase promotion</button>
+              <button style="font-family:var(--mono);font-size:10px;padding:4px 8px;border:1px solid var(--border);border-radius:3px;background:var(--surface);cursor:pointer;color:var(--text-2);">Repurchase tokens</button>
+              <button style="font-family:var(--mono);font-size:10px;padding:4px 8px;border:1px solid var(--border);border-radius:3px;background:var(--surface);cursor:pointer;color:var(--text-2);">Apply 3-month extension</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;margin-bottom:1.5rem;">
+
+    <!-- NEW LISTING REVIEW -->
+    <div class="card">
+      <div class="card-title">New listing in review — "Urban Tide"</div>
+      <div class="review-steps">
+        <div class="review-step">
+          <div class="step-icon step-done">✓</div>
+          <div>
+            <div class="step-name">Automated screening</div>
+            <div class="step-sub">Financial gateways passed · 14 months history · $6,200/yr · CV 0.27</div>
+          </div>
+        </div>
+        <div class="review-step">
+          <div class="step-icon step-done">✓</div>
+          <div>
+            <div class="step-name">Oracle data verification</div>
+            <div class="step-sub">DistroKid API synced · 7-node consensus achieved · ZK proof on-chain</div>
+          </div>
+        </div>
+        <div class="review-step">
+          <div class="step-icon step-pending">2</div>
+          <div>
+            <div class="step-name">Human review committee</div>
+            <div class="step-sub">In progress · Multi-sig reviewers · Est. 2–3 business days</div>
+          </div>
+        </div>
+        <div class="review-step">
+          <div class="step-icon step-waiting">4</div>
+          <div>
+            <div class="step-name">Issuance parameter assignment</div>
+            <div class="step-sub">Awaiting approval · Tier B expected · DCF pricing pending</div>
+          </div>
+        </div>
+        <div class="review-step">
+          <div class="step-icon step-waiting">5</div>
+          <div>
+            <div class="step-name">Token minting &amp; listing</div>
+            <div class="step-sub">Collateral to be locked before mint</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ROYALTY INCOME CHART -->
+    <div class="card">
+      <div class="card-title">Combined royalty income — last 12 months</div>
+      <div class="royalty-chart">
+        <canvas id="artistRoyaltyChart"></canvas>
+      </div>
+      <div style="display:flex;gap:14px;margin-top:10px;">
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2);"><div style="width:10px;height:10px;border-radius:2px;background:#1a1917;"></div>Midnight Signal</div>
+        <div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text-2);"><div style="width:10px;height:10px;border-radius:2px;background:#854f0b;"></div>Glass Hours</div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- PAYMENT OBLIGATIONS -->
+  <div class="card">
+    <div class="card-title">Payment obligations — April 2025</div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:1rem;">
+      <div style="background:var(--surface-2);border-radius:5px;padding:12px 14px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-bottom:6px;">MIDNIGHT SIGNAL</div>
+        <div style="font-family:var(--mono);font-size:18px;margin-bottom:4px;">$198.00</div>
+        <div style="font-size:12px;color:var(--text-2);">Due: 1 May 2025</div>
+        <div style="font-family:var(--mono);font-size:10px;background:rgba(0,229,176,0.08);color:#00e5b0;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:6px;">On-time</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:5px;padding:12px 14px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-bottom:6px;">GLASS HOURS</div>
+        <div style="font-family:var(--mono);font-size:18px;margin-bottom:4px;">$51.00</div>
+        <div style="font-size:12px;color:var(--text-2);">Due: 1 May 2025</div>
+        <div style="font-family:var(--mono);font-size:10px;background:rgba(255,184,77,0.1);color:#ffb84d;padding:2px 6px;border-radius:3px;display:inline-block;margin-top:6px;">Income declining</div>
+      </div>
+      <div style="background:var(--surface-2);border-radius:5px;padding:12px 14px;">
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-bottom:6px;">TOTAL OBLIGATION</div>
+        <div style="font-family:var(--mono);font-size:18px;margin-bottom:4px;">$249.00</div>
+        <div style="font-size:12px;color:var(--text-2);">Platform fee (1%): $2.49</div>
+        <div style="font-family:var(--mono);font-size:10px;color:var(--text-3);margin-top:6px;">Auto-deducted by contract</div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>♪ BeatChain · FT5003 Blockchain Innovation · NUS School of Computing · Built on Polygon ♪</footer>
+
+<script>
+function toggleRow(id) {
+  const row = document.getElementById(id);
+  row.classList.toggle('open');
+}
+
+const aMonths = ['May','Jun','Jul','Aug','Sep','Oct','Nov','Dec','Jan','Feb','Mar','Apr'];
+const midnight = [950, 920, 890, 870, 850, 830, 880, 1020, 1080, 980, 910, 870];
+const glass = [0, 0, 0, 1100, 1050, 980, 870, 740, 620, 510, 420, 340];
+
+const ctx = document.getElementById('artistRoyaltyChart').getContext('2d');
+new Chart(ctx, {
+  type: 'line',
+  data: {
+    labels: aMonths,
+    datasets: [
+      { label: 'Midnight Signal', data: midnight, borderColor: '#cdd6f4', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false },
+      { label: 'Glass Hours', data: glass, borderColor: '#ffb84d', borderWidth: 2, pointRadius: 2, tension: 0.3, fill: false, borderDash: [4,3] }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': $' + ctx.parsed.y } } },
+    scales: {
+      x: { grid: { display: false }, ticks: { font: { family: 'DM Mono', size: 10 }, color: '#3d4a62' } },
+      y: { grid: { color: '#1e2535', lineWidth: 0.5 }, ticks: { font: { family: 'DM Mono', size: 10 }, color: '#3d4a62', callback: v => '$' + v } }
+    }
+  }
+});
+</script>
+</body>
+</html>
